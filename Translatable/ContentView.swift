@@ -10,7 +10,8 @@ import AppKit
 
 struct ContentView: View {
     @State private var clipboardImage: NSImage? = nil
-    private var clipboardCheckTimer: Timer?
+    @State private var clipboardCheckTimer: Timer?
+    @State private var lastClipboardData: Data? = nil
 
     var body: some View {
         VStack {
@@ -18,44 +19,71 @@ struct ContentView: View {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFit()
+                    .frame(maxWidth: 300, maxHeight: 300)
             } else {
                 Text("No image in clipboard")
+                    .foregroundColor(.gray)
             }
         }
         .padding()
         .onAppear {
-            // Set up the timer to check the clipboard every 5 seconds
-            clipboardCheckTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-                checkClipboardForImage()
-            }
+            startClipboardTimer()
         }
         .onDisappear {
-            // Invalidate the timer when the view disappears
-            clipboardCheckTimer?.invalidate()
+            stopClipboardTimer()
         }
     }
 
+    private func startClipboardTimer() {
+        clipboardCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            checkClipboardForImage()
+        }
+    }
+
+    private func stopClipboardTimer() {
+        clipboardCheckTimer?.invalidate()
+        clipboardCheckTimer = nil
+    }
+
     private func getImageFromClipboard() -> NSImage? {
-        if let data = NSPasteboard.general.pasteboardItems?.first?.data(forType: .tiff) {
+        let pasteboard = NSPasteboard.general
+        
+        // Check if PNG data is available
+        if let data = pasteboard.data(forType: .png) {
             return NSImage(data: data)
         }
+        
+        // Fallback to TIFF data if PNG is not available
+        if let data = pasteboard.data(forType: .tiff) {
+            return NSImage(data: data)
+        }
+        
         return nil
     }
 
     private func checkClipboardForImage() {
         DispatchQueue.main.async {
-            if let image = getImageFromClipboard() {
-                clipboardImage = image
+            let pasteboard = NSPasteboard.general
+            
+            // Check for PNG data
+            if let data = pasteboard.data(forType: .png),
+               data != lastClipboardData {
+                lastClipboardData = data
+                clipboardImage = NSImage(data: data)
+                return
             }
-        }
-    }
-}
-
-@main
-struct TranslatableApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
+            
+            // Check for TIFF data if PNG is not available
+            if let data = pasteboard.data(forType: .tiff),
+               data != lastClipboardData {
+                lastClipboardData = data
+                clipboardImage = NSImage(data: data)
+                return
+            }
+            
+            // No image data
+            clipboardImage = nil
+            lastClipboardData = nil
         }
     }
 }
