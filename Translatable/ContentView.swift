@@ -14,28 +14,33 @@ struct ContentView: View {
     @State private var lastClipboardData: Data? = nil
 
     var body: some View {
-        VStack {
-            if let image = clipboardImage {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: 300, maxHeight: 300)
-            } else {
-                Text("No image in clipboard")
-                    .foregroundColor(.gray)
+            GeometryReader { geometry in
+                VStack {
+                    if let image = clipboardImage {
+                        Image(nsImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                    } else {
+                        Text("No image in clipboard")
+                                    .foregroundColor(.gray)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity) // Fill the available space
+                                    .background(Color.clear) // Optional, to ensure visibility
+                                    .multilineTextAlignment(.center) // Optional for multiple lines
+                    }
+                }
+                .padding()
+                .onAppear {
+                    startClipboardTimer()
+                }
+                .onDisappear {
+                    stopClipboardTimer()
+                }
             }
         }
-        .padding()
-        .onAppear {
-            startClipboardTimer()
-        }
-        .onDisappear {
-            stopClipboardTimer()
-        }
-    }
 
     private func startClipboardTimer() {
-        clipboardCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+        clipboardCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             checkClipboardForImage()
         }
     }
@@ -57,6 +62,12 @@ struct ContentView: View {
         if let data = pasteboard.data(forType: .tiff) {
             return NSImage(data: data)
         }
+        
+        //there is a bug where weird formats make it flash the icon
+//        if let data = pasteboard.data(forType: .dng) {
+//            return nil
+//        }
+        
         
         return nil
     }
