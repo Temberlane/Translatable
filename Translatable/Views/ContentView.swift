@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Cocoa
 
 struct ContentView: View {
     @State private var clipboardImage: NSImage? = nil
@@ -55,11 +56,13 @@ struct ContentView: View {
         
         // Check if PNG data is available
         if let data = pasteboard.data(forType: .png) {
+            saveImageFromPasteboard()
             return NSImage(data: data)
         }
         
         // Fallback to TIFF data if PNG is not available
         if let data = pasteboard.data(forType: .tiff) {
+            saveImageFromPasteboard()
             return NSImage(data: data)
         }
         
@@ -97,4 +100,53 @@ struct ContentView: View {
             lastClipboardData = nil
         }
     }
+    
+
+    func saveImageFromPasteboard() {
+        // Access the pasteboard
+        let pasteboard = NSPasteboard.general
+        
+        // Get image data from the pasteboard
+        if let data = pasteboard.data(forType: .png),
+           let image = NSImage(data: data) {
+            
+            // Specify the directory path
+            let fileManager = FileManager.default
+            let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+            let historyFolder = documentsDirectory.appendingPathComponent("Translatable/History")
+            
+            // Ensure the folder exists
+            if !fileManager.fileExists(atPath: historyFolder.path) {
+                do {
+                    try fileManager.createDirectory(at: historyFolder, withIntermediateDirectories: true, attributes: nil)
+                } catch {
+                    print("Failed to create folder: \(error)")
+                    return
+                }
+            }
+            
+            // Define the file path
+            let fileName = "image-\(UUID().uuidString).png"
+            let filePath = historyFolder.appendingPathComponent(fileName)
+            
+            // Convert NSImage to PNG data
+            guard let tiffData = image.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiffData),
+                  let pngData = bitmap.representation(using: .png, properties: [:]) else {
+                print("Failed to convert NSImage to PNG data")
+                return
+            }
+            
+            // Write the PNG data to the file
+            do {
+                try pngData.write(to: filePath)
+                print("Image saved to: \(filePath.path)")
+            } catch {
+                print("Failed to save image: \(error)")
+            }
+        } else {
+            print("No image found on the pasteboard")
+        }
+    }
+
 }
