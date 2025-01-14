@@ -56,13 +56,12 @@ struct ContentView: View {
         
         // Check if PNG data is available
         if let data = pasteboard.data(forType: .png) {
-            saveImageFromPasteboard()
             return NSImage(data: data)
         }
         
         // Fallback to TIFF data if PNG is not available
         if let data = pasteboard.data(forType: .tiff) {
-            saveImageFromPasteboard()
+            
             return NSImage(data: data)
         }
         
@@ -83,6 +82,8 @@ struct ContentView: View {
             if let data = pasteboard.data(forType: .png),
                data != lastClipboardData {
                 lastClipboardData = data
+                print("png avalible")
+                saveImageDataToHistoryFolder(data: data, format: "png")
                 clipboardImage = NSImage(data: data)
                 return
             }
@@ -91,6 +92,7 @@ struct ContentView: View {
             if let data = pasteboard.data(forType: .tiff),
                data != lastClipboardData {
                 lastClipboardData = data
+                saveImageDataToHistoryFolder(data: data, format: "tiff")
                 clipboardImage = NSImage(data: data)
                 return
             }
@@ -102,50 +104,32 @@ struct ContentView: View {
     }
     
 
-    func saveImageFromPasteboard() {
-        // Access the pasteboard
-        let pasteboard = NSPasteboard.general
+    
+    private func saveImageDataToHistoryFolder(data: Data, format: String) {
+        let fileManager = FileManager.default
+        let historyFolderURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("History")
         
-        // Get image data from the pasteboard
-        if let data = pasteboard.data(forType: .png),
-           let image = NSImage(data: data) {
-            
-            // Specify the directory path
-            let fileManager = FileManager.default
-            let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-            let historyFolder = documentsDirectory.appendingPathComponent("Translatable/History")
-            
-            // Ensure the folder exists
-            if !fileManager.fileExists(atPath: historyFolder.path) {
-                do {
-                    try fileManager.createDirectory(at: historyFolder, withIntermediateDirectories: true, attributes: nil)
-                } catch {
-                    print("Failed to create folder: \(error)")
-                    return
-                }
-            }
-            
-            // Define the file path
-            let fileName = "image-\(UUID().uuidString).png"
-            let filePath = historyFolder.appendingPathComponent(fileName)
-            
-            // Convert NSImage to PNG data
-            guard let tiffData = image.tiffRepresentation,
-                  let bitmap = NSBitmapImageRep(data: tiffData),
-                  let pngData = bitmap.representation(using: .png, properties: [:]) else {
-                print("Failed to convert NSImage to PNG data")
+        // Create the History folder if it doesn't exist
+        if !fileManager.fileExists(atPath: historyFolderURL.path) {
+            do {
+                try fileManager.createDirectory(at: historyFolderURL, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                print("Failed to create History folder: \(error)")
                 return
             }
-            
-            // Write the PNG data to the file
-            do {
-                try pngData.write(to: filePath)
-                print("Image saved to: \(filePath.path)")
-            } catch {
-                print("Failed to save image: \(error)")
-            }
-        } else {
-            print("No image found on the pasteboard")
+        }
+        
+        // Create a unique filename
+        let timestamp = Date().timeIntervalSince1970
+        let filename = "screenshot_\(timestamp).\(format)"
+        let fileURL = historyFolderURL.appendingPathComponent(filename)
+        
+        // Write the data to the file
+        do {
+            try data.write(to: fileURL)
+            print("Saved screenshot to \(fileURL.path)")
+        } catch {
+            print("Failed to save screenshot: \(error)")
         }
     }
 
