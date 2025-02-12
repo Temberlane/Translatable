@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var clipboardImage: NSImage? = nil
     @State private var clipboardCheckTimer: Timer?
     @State private var lastClipboardData: Data? = nil
+    @State private var uniqueImage: Bool = false
 
     var body: some View {
             GeometryReader { geometry in
@@ -40,6 +41,52 @@ struct ContentView: View {
             }
         }
 
+    private func checkClipboardForUnique() {
+        // compare current clipboard png to the most recent saved png in clipboard
+        let fileManager = FileManager.default
+        let historyFolderURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("History")
+        let pasteboard = NSPasteboard.general
+        var currentClipboard: NSImage? = nil
+        
+        // Check if PNG data is available
+        if let data = pasteboard.data(forType: .png) {
+            currentClipboard = NSImage(data: data)
+        }
+        
+        // Fallback to TIFF data if PNG is not available
+        if let data = pasteboard.data(forType: .tiff) {
+            currentClipboard = NSImage(data: data)
+        }
+        
+        guard let currentClipboardData = currentClipboard?.tiffRepresentation else {
+            uniqueImage = false
+            return
+        }
+        
+        // Get the most recent image file in the History folder
+        do {
+            let files = try fileManager.contentsOfDirectory(at: historyFolderURL, includingPropertiesForKeys: [.contentModificationDateKey], options: .skipsHiddenFiles)
+            let sortedFiles = files.sorted {
+                let date1 = try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate ?? Date.distantPast
+                let date2 = try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate ?? Date.distantPast
+                return date1 > date2
+            }
+            
+            if let mostRecentFile = sortedFiles.first, let mostRecentData = try? Data(contentsOf: mostRecentFile) {
+                if currentClipboardData == mostRecentData {
+                    uniqueImage = false
+                } else {
+                    uniqueImage = true
+                }
+            } else {
+                uniqueImage = true
+            }
+        } catch {
+            print("Failed to get the most recent file: \(error)")
+            uniqueImage = true
+        }
+    }
+    
     private func startClipboardTimer() {
         clipboardCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             checkClipboardForImage()
@@ -65,7 +112,8 @@ struct ContentView: View {
             return NSImage(data: data)
         }
         
-        //there is a bug where weird formats make it flash the icon
+        //there is a bug where weird formats make it flash the icon or if you copy a folder
+        // if copying any of those formats, it saves the tiff representation
 //        if let data = pasteboard.data(forType: .dng) {
 //            return nil
 //        }
@@ -82,7 +130,7 @@ struct ContentView: View {
             if let data = pasteboard.data(forType: .png),
                data != lastClipboardData {
                 lastClipboardData = data
-                print("png avalible")
+                print("New PNG available")
                 saveImageDataToHistoryFolder(data: data, format: "png")
                 clipboardImage = NSImage(data: data)
                 return
@@ -97,14 +145,13 @@ struct ContentView: View {
                 return
             }
             
-            // No image data
+            // No new image data
             clipboardImage = nil
-            lastClipboardData = nil
         }
     }
     
 
-    
+        
     private func saveImageDataToHistoryFolder(data: Data, format: String) {
         let fileManager = FileManager.default
         let historyFolderURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("History")
