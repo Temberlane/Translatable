@@ -76,51 +76,6 @@ struct ContentView: View {
         }
     }
 
-    private func checkClipboardForUnique() {
-        // compare current clipboard png to the most recent saved png in clipboard
-        let fileManager = FileManager.default
-        let historyFolderURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("History")
-        let pasteboard = NSPasteboard.general
-        var currentClipboard: NSImage? = nil
-        
-        // Check if PNG data is available
-        if let data = pasteboard.data(forType: .png) {
-            currentClipboard = NSImage(data: data)
-        } else if let data = pasteboard.data(forType: .tiff) {
-            // Fallback to TIFF data if PNG is not available
-            currentClipboard = NSImage(data: data)
-        }
-        
-        guard let currentClipboardData = currentClipboard?.tiffRepresentation else {
-            uniqueImage = false
-            return
-        }
-        
-        // Get the most recent image file in the History folder
-        do {
-            let files = try fileManager.contentsOfDirectory(at: historyFolderURL, includingPropertiesForKeys: [.contentModificationDateKey], options: .skipsHiddenFiles)
-            let sortedFiles = files.sorted {
-                if let date1 = try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-                   let date2 = try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate {
-                    return date1 > date2
-                }
-                return false
-            }
-            
-            if let mostRecentFile = sortedFiles.first, let mostRecentData = try? Data(contentsOf: mostRecentFile) {
-                if currentClipboardData == mostRecentData {
-                    uniqueImage = false
-                } else {
-                    uniqueImage = true
-                }
-            } else {
-                uniqueImage = true
-            }
-        } catch {
-            print("Failed to get the most recent file: \(error)")
-            uniqueImage = true
-        }
-    }
     
     private func startClipboardTimer() {
         clipboardCheckTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
