@@ -15,11 +15,12 @@ struct ContentView: View {
     @State private var lastClipboardData: Data? = nil
     @State private var uniqueImage: Bool = false
     @State private var savedImagePath: String? = nil // New state variable
+    @State private var currentPicture: NSImage? = nil // New state variable
 
     var body: some View {
         GeometryReader { geometry in
             VStack {
-                if let image = clipboardImage {
+                if let image = currentPicture {
                     Image(nsImage: image)
                         .resizable()
                         .scaledToFit()
@@ -31,19 +32,47 @@ struct ContentView: View {
                         .background(Color.clear) // Optional, to ensure visibility
                         .multilineTextAlignment(.center) // Optional for multiple lines
                 }
-                if let path = savedImagePath { // Display the saved image path
-                    Text("Saved screenshot to \(path)")
-                        .foregroundColor(.blue)
-                        .padding()
-                }
+                
             }
             .padding()
             .onAppear {
                 startClipboardTimer()
+                loadMostRecentImage()
             }
             .onDisappear {
                 stopClipboardTimer()
             }
+            VStack {
+                if let path = savedImagePath { // Display the saved image path
+                    Text("Saved screenshot to \(path)")
+                        .foregroundColor(.blue)
+                        .padding()
+                        .multilineTextAlignment(.center)
+                }
+            }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
+    }
+
+    private func loadMostRecentImage() {
+        let fileManager = FileManager.default
+        let historyFolderURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("History")
+        
+        do {
+            let files = try fileManager.contentsOfDirectory(at: historyFolderURL, includingPropertiesForKeys: [.contentModificationDateKey], options: .skipsHiddenFiles)
+            let sortedFiles = files.sorted {
+                if let date1 = try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+                   let date2 = try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate {
+                    return date1 > date2
+                }
+                return false
+            }
+            
+            if let mostRecentFile = sortedFiles.first, let imageData = try? Data(contentsOf: mostRecentFile) {
+                currentPicture = NSImage(data: imageData)
+                savedImagePath = mostRecentFile.path
+            }
+        } catch {
+            print("Failed to load the most recent image: \(error)")
         }
     }
 
@@ -57,10 +86,8 @@ struct ContentView: View {
         // Check if PNG data is available
         if let data = pasteboard.data(forType: .png) {
             currentClipboard = NSImage(data: data)
-        }
-        
-        // Fallback to TIFF data if PNG is not available
-        if let data = pasteboard.data(forType: .tiff) {
+        } else if let data = pasteboard.data(forType: .tiff) {
+            // Fallback to TIFF data if PNG is not available
             currentClipboard = NSImage(data: data)
         }
         
@@ -112,20 +139,10 @@ struct ContentView: View {
         // Check if PNG data is available
         if let data = pasteboard.data(forType: .png) {
             return NSImage(data: data)
-        }
-        
-        // Fallback to TIFF data if PNG is not available
-        if let data = pasteboard.data(forType: .tiff) {
-            
+        } else if let data = pasteboard.data(forType: .tiff) {
+            // Fallback to TIFF data if PNG is not available
             return NSImage(data: data)
         }
-        
-        //there is a bug where weird formats make it flash the icon or if you copy a folder
-        // if copying any of those formats, it saves the tiff representation
-//        if let data = pasteboard.data(forType: .dng) {
-//            return nil
-//        }
-        
         
         return nil
     }
@@ -134,32 +151,31 @@ struct ContentView: View {
         DispatchQueue.main.async {
             let pasteboard = NSPasteboard.general
             
-            // Check for PNG data
-            if let data = pasteboard.data(forType: .png),
-               data != lastClipboardData {
+            // Check for image data
+            switch pasteboard.data(forType: .png) {
+            case let data? where data != lastClipboardData:
                 lastClipboardData = data
                 print("New PNG available")
                 saveImageDataToHistoryFolder(data: data, format: "png")
                 clipboardImage = NSImage(data: data)
-                return
+                loadMostRecentImage() // Update currentPicture
+            case nil:
+                switch pasteboard.data(forType: .tiff) {
+                case let data? where data != lastClipboardData:
+                    lastClipboardData = data
+                    print("New TIFF available")
+                    saveImageDataToHistoryFolder(data: data, format: "tiff")
+                    clipboardImage = NSImage(data: data)
+                    loadMostRecentImage() // Update currentPicture
+                default:
+                    clipboardImage = nil
+                }
+            default:
+                clipboardImage = nil
             }
-            
-            // Check for TIFF data if PNG is not available
-            if let data = pasteboard.data(forType: .tiff),
-               data != lastClipboardData {
-                lastClipboardData = data
-                saveImageDataToHistoryFolder(data: data, format: "tiff")
-                clipboardImage = NSImage(data: data)
-                return
-            }
-            
-            // No new image data
-            clipboardImage = nil
         }
     }
     
-
-        
     private func saveImageDataToHistoryFolder(data: Data, format: String) {
         let fileManager = FileManager.default
         let historyFolderURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("History")
