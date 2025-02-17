@@ -17,6 +17,9 @@ struct ContentView: View {
     @State private var savedImagePath: String? = nil // New state variable
     @State private var currentPicture: NSImage? = nil // New state variable
 
+    // Define a constant for the History folder path
+    private let historyFolderPath = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("ScreenshotHistory")
+
     var body: some View {
         GeometryReader { geometry in
             VStack {
@@ -55,10 +58,9 @@ struct ContentView: View {
 
     private func loadMostRecentImage() {
         let fileManager = FileManager.default
-        let historyFolderURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("History")
         
         do {
-            let files = try fileManager.contentsOfDirectory(at: historyFolderURL, includingPropertiesForKeys: [.contentModificationDateKey], options: .skipsHiddenFiles)
+            let files = try fileManager.contentsOfDirectory(at: historyFolderPath, includingPropertiesForKeys: [.contentModificationDateKey], options: .skipsHiddenFiles)
             let sortedFiles = files.sorted {
                 if let date1 = try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
                    let date2 = try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate {
@@ -133,14 +135,13 @@ struct ContentView: View {
     
     private func saveImageDataToHistoryFolder(data: Data, format: String) {
         let fileManager = FileManager.default
-        let historyFolderURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("History")
         
-        // Create the History folder if it doesn't exist
-        if (!fileManager.fileExists(atPath: historyFolderURL.path)) {
+        // Create the Data folder if it doesn't exist
+        if (!fileManager.fileExists(atPath: historyFolderPath.path)) {
             do {
-                try fileManager.createDirectory(at: historyFolderURL, withIntermediateDirectories: true, attributes: nil)
+                try fileManager.createDirectory(at: historyFolderPath, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                print("Failed to create History folder: \(error)")
+                print("Failed to create Data folder: \(error)")
                 return
             }
         }
@@ -148,7 +149,7 @@ struct ContentView: View {
         // Create a unique filename
         let timestamp = Date().timeIntervalSince1970
         let filename = "screenshot_\(timestamp).\(format)"
-        let fileURL = historyFolderURL.appendingPathComponent(filename)
+        let fileURL = historyFolderPath.appendingPathComponent(filename)
         
         // Write the data to the file
         do {
