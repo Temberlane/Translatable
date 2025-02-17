@@ -14,32 +14,38 @@ struct ContentView: View {
     @State private var clipboardCheckTimer: Timer?
     @State private var lastClipboardData: Data? = nil
     @State private var uniqueImage: Bool = false
+    @State private var savedImagePath: String? = nil // New state variable
 
     var body: some View {
-            GeometryReader { geometry in
-                VStack {
-                    if let image = clipboardImage {
-                        Image(nsImage: image)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                    } else {
-                        Text("No image in clipboard")
-                                    .foregroundColor(.gray)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity) // Fill the available space
-                                    .background(Color.clear) // Optional, to ensure visibility
-                                    .multilineTextAlignment(.center) // Optional for multiple lines
-                    }
+        GeometryReader { geometry in
+            VStack {
+                if let image = clipboardImage {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                } else {
+                    Text("No image in clipboard")
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity) // Fill the available space
+                        .background(Color.clear) // Optional, to ensure visibility
+                        .multilineTextAlignment(.center) // Optional for multiple lines
                 }
-                .padding()
-                .onAppear {
-                    startClipboardTimer()
-                }
-                .onDisappear {
-                    stopClipboardTimer()
+                if let path = savedImagePath { // Display the saved image path
+                    Text("Saved screenshot to \(path)")
+                        .foregroundColor(.blue)
+                        .padding()
                 }
             }
+            .padding()
+            .onAppear {
+                startClipboardTimer()
+            }
+            .onDisappear {
+                stopClipboardTimer()
+            }
         }
+    }
 
     private func checkClipboardForUnique() {
         // compare current clipboard png to the most recent saved png in clipboard
@@ -67,9 +73,11 @@ struct ContentView: View {
         do {
             let files = try fileManager.contentsOfDirectory(at: historyFolderURL, includingPropertiesForKeys: [.contentModificationDateKey], options: .skipsHiddenFiles)
             let sortedFiles = files.sorted {
-                let date1 = try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate ?? Date.distantPast
-                let date2 = try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate ?? Date.distantPast
-                return date1 > date2
+                if let date1 = try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+                   let date2 = try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate {
+                    return date1 > date2
+                }
+                return false
             }
             
             if let mostRecentFile = sortedFiles.first, let mostRecentData = try? Data(contentsOf: mostRecentFile) {
@@ -157,7 +165,7 @@ struct ContentView: View {
         let historyFolderURL = fileManager.homeDirectoryForCurrentUser.appendingPathComponent("History")
         
         // Create the History folder if it doesn't exist
-        if !fileManager.fileExists(atPath: historyFolderURL.path) {
+        if (!fileManager.fileExists(atPath: historyFolderURL.path)) {
             do {
                 try fileManager.createDirectory(at: historyFolderURL, withIntermediateDirectories: true, attributes: nil)
             } catch {
@@ -174,6 +182,7 @@ struct ContentView: View {
         // Write the data to the file
         do {
             try data.write(to: fileURL)
+            savedImagePath = fileURL.path // Set the path to the state variable
             print("Saved screenshot to \(fileURL.path)")
         } catch {
             print("Failed to save screenshot: \(error)")
