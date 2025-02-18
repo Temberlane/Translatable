@@ -16,6 +16,7 @@ struct ContentView: View {
         GeometryReader { geometry in
             HStack(spacing: 0) {
                 SideBarView() // Add the SideBarView on the left
+                    .frame(width: geometry.size.width * 0.15) // Set width to 15% of available width
                 
                 VStack {
                     if let image = viewModel.currentPicture {
@@ -23,6 +24,10 @@ struct ContentView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: geometry.size.width * 0.85, height: geometry.size.height) // Set width to 85% of available width
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.black, lineWidth: 2)
+                            )
                     } else {
                         Text("No image in clipboard")
                             .foregroundColor(.gray)
@@ -39,14 +44,14 @@ struct ContentView: View {
                 .onDisappear {
                     viewModel.stopClipboardTimer()
                 }
-                VStack {
-                    if let path = viewModel.savedImagePath { // Display the saved image path
-                        Text("Saved screenshot to \(path)")
-                            .foregroundColor(.blue)
-                            .padding()
-                            .multilineTextAlignment(.center)
-                    }
-                }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                // VStack {
+                //     if let path = viewModel.savedImagePath { // Display the saved image path
+                //         Text("Saved screenshot to \(path)")
+                //             .foregroundColor(.blue)
+                //             .padding()
+                //             .multilineTextAlignment(.center)
+                //     }
+                // }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
     }

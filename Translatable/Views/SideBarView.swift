@@ -11,20 +11,18 @@ struct SideBarView: View {
     @StateObject private var viewModel = SideBarViewModel()
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack {
-                TextField("Enter text", text: $viewModel.inputText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
-
-                Button(action: viewModel.saveText) {
-                    Text("Save")
-                }
+        VStack {
+            TextField("Enter text", text: $viewModel.inputText)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
+
+            Button(action: viewModel.saveText) {
+                Text("Save")
             }
-            .frame(width: geometry.size.width * 0.15) // Set width to 15% of available width
             .padding()
         }
+        .frame(maxWidth: 300) // Set a maximum width for the sidebar
+        .padding()
     }
 }
 
