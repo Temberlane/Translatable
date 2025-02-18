@@ -67,6 +67,20 @@ class ContentViewModel: ObservableObject {
         }
     }
 
+    func clearScreenshotHistory() {
+        let fileManager = FileManager.default
+        
+        do {
+            let files = try fileManager.contentsOfDirectory(at: historyFolderPath, includingPropertiesForKeys: nil, options: [])
+            for file in files {
+                try fileManager.removeItem(at: file)
+            }
+            print("Cleared ScreenshotHistory directory")
+        } catch {
+            print("Failed to clear ScreenshotHistory directory: \(error)")
+        }
+    }
+
     private func getImageFromClipboard() -> NSImage? {
         let pasteboard = NSPasteboard.general
         
