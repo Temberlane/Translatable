@@ -14,6 +14,8 @@
 import SwiftUI
 import AppKit
 import Cocoa
+import Vision
+
 
 class ContentViewModel: ObservableObject {
     @Published var clipboardImage: NSImage? = nil
@@ -51,6 +53,14 @@ class ContentViewModel: ObservableObject {
             if let mostRecentFile = sortedFiles.first, let imageData = try? Data(contentsOf: mostRecentFile) {
                 currentPicture = NSImage(data: imageData)
                 savedImagePath = mostRecentFile.path
+                print("Loaded most recent image from \(savedImagePath ?? "unknown path")")
+                
+                // Run text recognition on the currentPicture
+                if let currentPicture = currentPicture {
+                    recognizeText(from: currentPicture)
+                } else {
+                    print("No current picture to recognize text from")
+                }
             }
         } catch {
             print("Failed to load the most recent image: \(error)")
@@ -126,5 +136,57 @@ class ContentViewModel: ObservableObject {
         } catch {
             print("Failed to save screenshot: \(error)")
         }
+    }
+    
+
+    func recognizeText(from nsImage: NSImage) {
+        guard let cgImage = nsImage.cgImage else {
+            print("Failed to convert NSImage to CGImage")
+            return
+        }
+        print("Successfully converted NSImage to CGImage")
+
+        let request = VNRecognizeTextRequest { request, error in
+            if let error = error {
+                print("Error in text recognition request: \(error)")
+                return
+            }
+            
+            guard let results = request.results as? [VNRecognizedTextObservation] else {
+                print("No text recognized")
+                return
+            }
+            
+            for observation in results {
+                if let topCandidate = observation.topCandidates(1).first {
+                    print("Recognized text: \(topCandidate.string)")
+                }
+            }
+        }
+
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = true
+
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+
+        do {
+            try handler.perform([request])
+            print("Text recognition performed successfully")
+        } catch {
+            print("Error performing text recognition: \(error)")
+        }
+    }
+}
+
+// Move the extension outside of the class
+extension NSImage {
+    var cgImage: CGImage? {
+        var rect = CGRect(origin: .zero, size: self.size)
+        guard let cgImage = self.cgImage(forProposedRect: &rect, context: nil, hints: nil) else {
+            print("Failed to get CGImage from NSImage")
+            return nil
+        }
+        print("Successfully got CGImage from NSImage")
+        return cgImage
     }
 }
