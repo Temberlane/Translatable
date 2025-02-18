@@ -1,50 +1,29 @@
+//
+//  SideBarView.swift
+//  Translatable
+//
+//  Created by Thomas Li on 2025-01-13.
+//
+
 import SwiftUI
 
 struct SideBarView: View {
-    @State private var inputText: String = ""
-    private let dataFolderPath = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Containers/Translatable/Data")
+    @StateObject private var viewModel = SideBarViewModel()
 
     var body: some View {
-        VStack {
-            TextField("Enter text", text: $inputText)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+        GeometryReader { geometry in
+            VStack {
+                TextField("Enter text", text: $viewModel.inputText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+
+                Button(action: viewModel.saveText) {
+                    Text("Save")
+                }
                 .padding()
-
-            Button(action: saveText) {
-                Text("Save")
             }
+            .frame(width: geometry.size.width * 0.15) // Set width to 15% of available width
             .padding()
-        }
-        .frame(maxWidth: 300)
-        .padding()
-    }
-
-    private func saveText() {
-        let fileManager = FileManager.default
-
-        // Create the Data folder if it doesn't exist
-        if !fileManager.fileExists(atPath: dataFolderPath.path) {
-            do {
-                try fileManager.createDirectory(at: dataFolderPath, withIntermediateDirectories: true, attributes: nil)
-            } catch {
-                print("Failed to create Data folder: \(error)")
-                return
-            }
-        }
-
-        // Create a unique filename
-        let timestamp = Date().timeIntervalSince1970
-        let filename = "text_\(timestamp).json"
-        let fileURL = dataFolderPath.appendingPathComponent(filename)
-
-        // Create JSON data
-        let jsonData: [String: String] = ["text": inputText]
-        do {
-            let data = try JSONSerialization.data(withJSONObject: jsonData, options: .prettyPrinted)
-            try data.write(to: fileURL)
-            print("Saved text to \(fileURL.path)")
-        } catch {
-            print("Failed to save text: \(error)")
         }
     }
 }

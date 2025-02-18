@@ -9,14 +9,12 @@ import SwiftUI
 import AppKit
 import Cocoa
 
-// Import the ContentViewModel
-
 struct ContentView: View {
     @EnvironmentObject var viewModel: ContentViewModel
 
     var body: some View {
         GeometryReader { geometry in
-            HStack {
+            HStack(spacing: 0) {
                 SideBarView() // Add the SideBarView on the left
                 
                 VStack {
@@ -24,7 +22,7 @@ struct ContentView: View {
                         Image(nsImage: image)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .frame(width: geometry.size.width * 0.85, height: geometry.size.height) // Set width to 85% of available width
                     } else {
                         Text("No image in clipboard")
                             .foregroundColor(.gray)
@@ -52,4 +50,8 @@ struct ContentView: View {
             }
         }
     }
+}
+
+#Preview {
+    ContentView()
 }
