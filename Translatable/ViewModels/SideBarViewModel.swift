@@ -24,13 +24,28 @@ class SideBarViewModel: ObservableObject {
             }
         }
 
-        // Create a unique filename
-        let timestamp = Date().timeIntervalSince1970
-        let filename = "text_\(timestamp).json"
+        let filename = "text_data.json"
         let fileURL = dataFolderPath.appendingPathComponent(filename)
 
-        // Create JSON data
-        let jsonData: [String: String] = ["text": inputText]
+        var jsonData: [String: String] = [:]
+
+        // Read existing data if the file exists
+        if fileManager.fileExists(atPath: fileURL.path) {
+            do {
+                let data = try Data(contentsOf: fileURL)
+                if let existingData = try JSONSerialization.jsonObject(with: data, options: []) as? [String: String] {
+                    jsonData = existingData
+                }
+            } catch {
+                print("Failed to read existing data: \(error)")
+            }
+        }
+
+        // Append new text
+        let timestamp = Date().timeIntervalSince1970
+        jsonData["text_\(timestamp)"] = inputText
+
+        // Write updated data back to the file
         do {
             let data = try JSONSerialization.data(withJSONObject: jsonData, options: .prettyPrinted)
             try data.write(to: fileURL)

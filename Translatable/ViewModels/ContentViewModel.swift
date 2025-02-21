@@ -15,6 +15,7 @@ import SwiftUI
 import AppKit
 import Cocoa
 import Vision
+import Foundation
 
 
 class ContentViewModel: ObservableObject {
@@ -171,11 +172,19 @@ class ContentViewModel: ObservableObject {
                 return
             }
             
+            var boundingBoxes: [CGRect] = []
+            var translatedTexts: [String] = []
             for observation in results {
                 if let topCandidate = observation.topCandidates(1).first {
                     print("Recognized text: \(topCandidate.string)")
+                    boundingBoxes.append(observation.boundingBox)
+                    let translatedText = self.translateText(topCandidate.string)
+                    translatedTexts.append(translatedText)
                 }
             }
+            
+            // Draw bounding boxes and translated text on the image
+            self.drawBoundingBoxesAndText(on: nsImage, boundingBoxes: boundingBoxes, texts: translatedTexts)
         }
 
         request.recognitionLevel = .accurate
@@ -189,6 +198,89 @@ class ContentViewModel: ObservableObject {
         } catch {
             print("Error performing text recognition: \(error)")
         }
+    }
+
+    func drawBoundingBoxesAndText(on nsImage: NSImage, boundingBoxes: [CGRect], texts: [String]) {
+        let imageSize = nsImage.size
+        let newImage = NSImage(size: imageSize)
+        
+        newImage.lockFocus()
+        nsImage.draw(at: .zero, from: CGRect(origin: .zero, size: imageSize), operation: .sourceOver, fraction: 1.0)
+        
+        let context = NSGraphicsContext.current?.cgContext
+        context?.setStrokeColor(NSColor.green.cgColor)
+        context?.setLineWidth(2.0)
+        
+        for (index, box) in boundingBoxes.enumerated() {
+            let rect = CGRect(x: box.origin.x * imageSize.width,
+                              y: (1 - box.origin.y - box.height) * imageSize.height,
+                              width: box.width * imageSize.width,
+                              height: box.height * imageSize.height)
+            context?.stroke(rect)
+            
+            // Draw translated text
+            let text = texts[index]
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: 12),
+                .foregroundColor: NSColor.green
+            ]
+            let attributedString = NSAttributedString(string: text, attributes: attributes)
+            attributedString.draw(in: rect)
+        }
+        
+        newImage.unlockFocus()
+        
+        // Update the currentPicture with the new image
+        DispatchQueue.main.async {
+            self.currentPicture = newImage
+        }
+    }
+
+    func translateText(_ text: String) -> String {
+        let apiKey = "YOUR_DEEPL_API_KEY"
+        let url = URL(string: "https://api-free.deepl.com/v2/translate")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        let body = "auth_key=\(apiKey)&text=\(text)&target_lang=EN"
+        request.httpBody = body.data(using: .utf8)
+        
+        var translatedText = "Translation failed"
+        
+        let semaphore = DispatchSemaphore(value: 0)
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            defer { semaphore.signal() }
+            
+            if let error = error {
+                print("Error making request: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                print("No data received")
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let translations = json["translations"] as? [[String: Any]],
+                   let translation = translations.first,
+                   let translatedTextResult = translation["text"] as? String {
+                    translatedText = translatedTextResult
+                } else {
+                    print("Invalid response format")
+                }
+            } catch {
+                print("Error parsing response: \(error)")
+            }
+        }
+        
+        task.resume()
+        semaphore.wait()
+        
+        return translatedText
     }
 }
 

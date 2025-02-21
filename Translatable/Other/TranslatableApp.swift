@@ -18,6 +18,7 @@ struct TranslatableApp: App {
                 .environmentObject(viewModel)
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
+        // delete screenshot history when app closes
             if newPhase == .inactive || newPhase == .background {
                 viewModel.clearScreenshotHistory()
             }
