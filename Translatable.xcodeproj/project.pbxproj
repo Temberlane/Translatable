@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E980345B2D6AEDE3003BFC91 /* SwiftDotEnv in Frameworks */ = {isa = PBXBuildFile; productRef = E980345A2D6AEDE3003BFC91 /* SwiftDotEnv */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		E950C8622D30DE3B0009B980 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E980345B2D6AEDE3003BFC91 /* SwiftDotEnv in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 				E950C8522D30DE380009B980 /* Translatable */,
 				E950C8642D30DE3B0009B980 /* TranslatableTests */,
 				E950C86E2D30DE3B0009B980 /* TranslatableUITests */,
+				E98034592D6AEDE3003BFC91 /* Frameworks */,
 				E950C8512D30DE380009B980 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +96,13 @@
 				E950C86B2D30DE3B0009B980 /* TranslatableUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E98034592D6AEDE3003BFC91 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,6 +125,7 @@
 			);
 			name = Translatable;
 			packageProductDependencies = (
+				E980345A2D6AEDE3003BFC91 /* SwiftDotEnv */,
 			);
 			productName = Translatable;
 			productReference = E950C8502D30DE380009B980 /* Translatable.app */;
@@ -567,6 +581,14 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E980345A2D6AEDE3003BFC91 /* SwiftDotEnv */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9EBAC002D6AE77500985E5B /* XCRemoteSwiftPackageReference "SwiftDotenv" */;
+			productName = SwiftDotEnv;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E950C8482D30DE380009B980 /* Project object */;
 }

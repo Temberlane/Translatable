@@ -74,6 +74,13 @@
             ReferencedContainer = "container:Translatable.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "DEEPL_API_KEY"
+            value = "f82042ae-8031-4abd-aa38-dd0829bf3c5f:fx"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

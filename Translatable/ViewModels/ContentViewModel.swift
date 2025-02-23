@@ -234,16 +234,20 @@ class ContentViewModel: ObservableObject {
     }
 
     func translateText(_ text: String) -> String {
+        // Retrieve the API key from the .env file
         guard let apiKey = env["DEEPL_API_KEY"] else {
             print("DEEPL_API_KEY not found in .env file")
             return "Translation failed"
         }
+
+        // Correct URL for DeepL API
         let url = URL(string: "https://api-free.deepl.com/v2/translate")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
-        let body = "auth_key=\(apiKey)&text=\(text)&target_lang=EN"
+        // Correctly format the body with URL-encoded parameters
+        let body = "auth_key=\(apiKey)&text=\(text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? text)&source_lang=FR&target_lang=EN"
         request.httpBody = body.data(using: .utf8)
         
         var translatedText = "Translation failed"

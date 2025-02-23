@@ -1,6 +1,4 @@
 *.xcuserstate
 project.xcworkspace/
 xcuserdata/
-
-# .env file
 .env
