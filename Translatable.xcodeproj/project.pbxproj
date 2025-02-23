@@ -195,6 +195,9 @@
 			);
 			mainGroup = E950C8472D30DE380009B980;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E9EBAC002D6AE77500985E5B /* XCRemoteSwiftPackageReference "SwiftDotenv" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E950C8512D30DE380009B980 /* Products */;
 			projectDirPath = "";
@@ -553,6 +556,17 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E9EBAC002D6AE77500985E5B /* XCRemoteSwiftPackageReference "SwiftDotenv" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftOnTheServer/SwiftDotenv";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 	};
 	rootObject = E950C8482D30DE380009B980 /* Project object */;
 }

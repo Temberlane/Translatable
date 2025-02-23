@@ -4,19 +4,16 @@
 //
 //  Created by Thomas Li on 2025-02-17.
 //
-//
-//  ContentViewModel.swift
-//  Translatable
-//
-//  Created by Thomas Li on 2025-02-17.
-//
 
 import SwiftUI
 import AppKit
 import Cocoa
 import Vision
 import Foundation
+import DotEnv
 
+// Load environment variables
+let env = DotEnv(withFile: ".env")
 
 class ContentViewModel: ObservableObject {
     @Published var clipboardImage: NSImage? = nil
@@ -237,7 +234,10 @@ class ContentViewModel: ObservableObject {
     }
 
     func translateText(_ text: String) -> String {
-        let apiKey = "YOUR_DEEPL_API_KEY"
+        guard let apiKey = env["DEEPL_API_KEY"] else {
+            print("DEEPL_API_KEY not found in .env file")
+            return "Translation failed"
+        }
         let url = URL(string: "https://api-free.deepl.com/v2/translate")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
