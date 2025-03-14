@@ -198,19 +198,31 @@ class ContentViewModel: ObservableObject {
     }
 
     func drawBoundingBoxesAndText(on nsImage: NSImage, boundingBoxes: [CGRect], texts: [String]) {
+        let padding: CGFloat = 10.0
         let imageSize = nsImage.size
-        let newImage = NSImage(size: imageSize)
+        let paddedSize = CGSize(width: imageSize.width + 2 * padding, height: imageSize.height + 2 * padding)
+        let newImage = NSImage(size: paddedSize)
         
         newImage.lockFocus()
-        nsImage.draw(at: .zero, from: CGRect(origin: .zero, size: imageSize), operation: .sourceOver, fraction: 1.0)
         
+        // Draw the black background
         let context = NSGraphicsContext.current?.cgContext
-        context?.setStrokeColor(NSColor.green.cgColor)
+        context?.setFillColor(NSColor.black.cgColor)
+        context?.fill(CGRect(origin: .zero, size: paddedSize))
+        
+        // Draw the image with padding
+        nsImage.draw(at: CGPoint(x: padding, y: padding), from: CGRect(origin: .zero, size: imageSize), operation: .sourceOver, fraction: 1.0)
+        
+        context?.setStrokeColor(NSColor.black.cgColor)
         context?.setLineWidth(2.0)
         
+        // Draw a border around the entire image with padding
+        let borderRect = CGRect(origin: CGPoint(x: padding, y: padding), size: imageSize)
+        context?.stroke(borderRect)
+        
         for (index, box) in boundingBoxes.enumerated() {
-            let rect = CGRect(x: box.origin.x * imageSize.width,
-                              y: (1 - box.origin.y - box.height) * imageSize.height,
+            let rect = CGRect(x: box.origin.x * imageSize.width + padding,
+                              y: (1 - box.origin.y - box.height) * imageSize.height + padding,
                               width: box.width * imageSize.width,
                               height: box.height * imageSize.height)
             context?.stroke(rect)
@@ -219,7 +231,7 @@ class ContentViewModel: ObservableObject {
             let text = texts[index]
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: NSFont.systemFont(ofSize: 12),
-                .foregroundColor: NSColor.green
+                .foregroundColor: NSColor.black
             ]
             let attributedString = NSAttributedString(string: text, attributes: attributes)
             attributedString.draw(in: rect)
